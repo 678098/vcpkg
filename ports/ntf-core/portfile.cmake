@@ -2,7 +2,7 @@ vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO bloomberg/ntf-core
     REF "${VERSION}"
-    SHA512 57662d2dd105b2781e580623c26cd7bde84fce8374bbd70c18595a5f6934869b7a570f0d3c2e17e115f6c7eb1067541f8d19523639815b285324061f807d3179
+    SHA512 9b1841e77b554de090532f59b25a6752477ad0df9396a283b6979c18233e7e1d2b4c4d54ccd5af971704ab1952b1753e72798ea2a0e8862fc257900a856cbade
     HEAD_REF main
     PATCHES dont-use-lib64.patch
 )
@@ -26,7 +26,7 @@ function(fix_pkgconfig_ufid lib_dir ufid pc_name)
         set(build_mode "debug")
     endif()
 
-    vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/${lib_dir}/cmake/${pc_name}Targets-${build_mode}.cmake" "/${ufid}" "")
+    vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/${lib_dir}/cmake/${pc_name}/${pc_name}-targets-${build_mode}.cmake" "/${ufid}" "")
 endfunction()
 
 function(fix_install_dir lib_dir ufid)
@@ -42,23 +42,8 @@ endfunction()
 fix_install_dir("lib" "opt_exc_mt")
 fix_install_dir("debug/lib" "dbg_exc_mt")
 
-# The ntf-core build installs CMake configs for both targets into share/ntf-core, which
-# find_package will not be able to find on its own. We use vcpkg_cmake_config_fixup to install
-# CMake configs into share/nts, and then move the ntc CMake configs into share/ntc with this
-# function.
-function(ntf_core_fixup_ntc_config)
-    set(nts_share "${CURRENT_PACKAGES_DIR}/share/nts")
-    set(ntc_share "${CURRENT_PACKAGES_DIR}/share/ntc")
-    file(GLOB ntc_configs "${nts_share}/ntc*.cmake")
-    file(MAKE_DIRECTORY "${ntc_share}")
-    foreach(ntc_config IN LISTS ntc_configs)
-        file(RELATIVE_PATH ntc_config_rel "${nts_share}" "${ntc_config}")
-        file(RENAME "${ntc_config}" "${ntc_share}/${ntc_config_rel}")
-    endforeach()
-endfunction()
-
-vcpkg_cmake_config_fixup(CONFIG_PATH "lib/cmake" PACKAGE_NAME nts)
-ntf_core_fixup_ntc_config()
+vcpkg_cmake_config_fixup(CONFIG_PATH "lib/cmake/nts" PACKAGE_NAME nts DO_NOT_DELETE_PARENT_CONFIG_PATH)
+vcpkg_cmake_config_fixup(CONFIG_PATH "lib/cmake/ntc" PACKAGE_NAME ntc)
 
 # Handle copyright
 vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")
